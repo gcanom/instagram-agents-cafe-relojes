@@ -96,6 +96,10 @@ def render_images(visual: dict, provider, storage, tag: str, log=print) -> list[
     for n, item in enumerate(items, 1):
         prompt = f"{item['prompt']}. {style}. No text, no logos, no watermark."
         data = provider.generate(prompt)
+        if item.get("overlay_text"):
+            from .compose import overlay
+
+            data = overlay(data, item["overlay_text"], n, len(items))
         url = storage.upload(data, f"{tag}-{n}")
         log(f"[images] {n}/{len(items)} -> {url or 'guardada en data/images (sin URL pública)'}")
         if url:

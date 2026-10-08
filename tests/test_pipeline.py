@@ -64,11 +64,21 @@ if __name__ == "__main__":
     unittest.main()
 
 
+def _real_png() -> bytes:
+    import io
+
+    from PIL import Image
+
+    buf = io.BytesIO()
+    Image.new("RGB", (256, 320), (90, 60, 40)).save(buf, "PNG")
+    return buf.getvalue()
+
+
 class ImageTests(unittest.TestCase):
     def test_pipeline_renders_and_queues_for_approval(self):
         class P:
             def generate(self, prompt, **_):
-                return b"png"
+                return _real_png()
 
         class S:
             def upload(self, data, name):
@@ -86,7 +96,7 @@ class ImageTests(unittest.TestCase):
 
         class P:
             def generate(self, prompt, **_):
-                return b"png"
+                return _real_png()
 
         class S:
             def upload(self, data, name):
@@ -106,3 +116,18 @@ class ImageTests(unittest.TestCase):
             "swarm.images.requests.get", side_effect=lambda *a, **k: next(gets)
         ), patch("swarm.images.time.sleep"):
             self.assertEqual(BFLProvider(key="k").generate("p"), b"IMG")
+
+
+class ComposeTests(unittest.TestCase):
+    def test_overlay_returns_jpeg_same_size(self):
+        import io
+
+        from PIL import Image
+
+        from swarm.compose import overlay
+
+        src = io.BytesIO()
+        Image.new("RGB", (1024, 1280), (90, 60, 40)).save(src, "PNG")
+        out = overlay(src.getvalue(), "Un texto largo de prueba para comprobar el ajuste de línea en la slide", 2, 6)
+        self.assertEqual(out[:3], b"\xff\xd8\xff")
+        self.assertEqual(Image.open(io.BytesIO(out)).size, (1024, 1280))

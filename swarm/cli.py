@@ -15,6 +15,9 @@ def main(argv=None):
     sub.add_parser("list")
     s = sub.add_parser("show")
     s.add_argument("id", type=int)
+    n = sub.add_parser("ingest", help="Encola un post ya redactado (JSON con plan/research/copy/review/visual)")
+    n.add_argument("file")
+    n.add_argument("--render", action="store_true", help="Genera imágenes con FLUX tras encolar")
     r = sub.add_parser("render", help="Genera imágenes con FLUX para un post en needs_assets")
     r.add_argument("id", type=int)
     i = sub.add_parser("images", help="Adjunta URLs públicas de imágenes a un post")
@@ -36,6 +39,18 @@ def main(argv=None):
 
             provider, storage = BFLProvider(), make_storage()
         generate_post(LLM(), store, args.topic, image_provider=provider, storage=storage)
+    elif args.cmd == "ingest":
+        payload = json.load(open(args.file))
+        payload.setdefault("image_urls", [])
+        post_id = store.add("needs_assets", payload)
+        print(f"post {post_id} encolado")
+        if args.render:
+            from .images import BFLProvider, make_storage, render_images
+
+            urls = render_images(payload["visual"], BFLProvider(), make_storage(), f"post{post_id}")
+            if urls:
+                attach_images(store, post_id, urls)
+                print(f"estado: {store.get(post_id)['status']}")
     elif args.cmd == "render":
         from .images import BFLProvider, make_storage, render_images
 
