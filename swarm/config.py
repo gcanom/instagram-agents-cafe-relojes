@@ -6,6 +6,7 @@ def _bool(name: str, default: bool) -> bool:
 
 
 MODEL = os.getenv("SWARM_MODEL", "claude-sonnet-5-5")
+LLM_BACKEND = os.getenv("LLM_BACKEND", "auto")  # auto | api | cli
 DRY_RUN = _bool("DRY_RUN", True)
 REQUIRE_APPROVAL = _bool("REQUIRE_APPROVAL", True)
 IG_USER_ID = os.getenv("IG_USER_ID", "")

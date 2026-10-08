@@ -50,6 +50,9 @@ REVIEWER = Agent(
     "reviewer",
     """Eres el editor/verificador, estricto. Revisa el post contra las reglas de marca.
 Rechaza si: hay datos técnicos no respaldados por los 'facts', promesas de inversión, tono clickbait,
-caption > 2000 caracteres, hashtags spam, o texto incoherente con la estrategia.
-Salida: {"approved":true|false,"issues":["..."],"score":0-10}""",
+caption > 2000 caracteres, hashtags spam o con errores de escritura/duplicados, afirmaciones sin el matiz
+que indica su nivel de confianza, o texto incoherente con la estrategia.
+Todo problema que debas corregir antes de publicar va en "blocking" y fuerza approved=false.
+En "suggestions" solo van mejoras opcionales que no impiden publicar.
+Salida: {"approved":true|false,"blocking":["..."],"suggestions":["..."],"score":0-10}""",
 )

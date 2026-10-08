@@ -27,18 +27,19 @@ def main(argv=None):
     a.add_argument("id", type=int)
     a.add_argument("--at", help="ISO UTC, ej. 2026-10-09T14:00:00+00:00")
     sub.add_parser("publish", help="Publica los aprobados que ya tocan")
+    sub.add_parser("run", help="Ciclo para cron: genera un post (si no hay ya en espera) y publica lo aprobado")
     args = ap.parse_args(argv)
 
     store = Store()
     if args.cmd == "generate":
-        from .llm import LLM
+        from .llm import make_llm
 
         provider = storage = None
         if config.BFL_API_KEY:
             from .images import BFLProvider, make_storage
 
             provider, storage = BFLProvider(), make_storage()
-        generate_post(LLM(), store, args.topic, image_provider=provider, storage=storage)
+        generate_post(make_llm(), store, args.topic, image_provider=provider, storage=storage)
     elif args.cmd == "ingest":
         payload = json.load(open(args.file))
         payload.setdefault("image_urls", [])
@@ -71,6 +72,20 @@ def main(argv=None):
         if args.at:
             store.db.execute("UPDATE posts SET scheduled_at=? WHERE id=?", (args.at, args.id))
         store.set_status(args.id, "approved")
+    elif args.cmd == "run":
+        from .llm import make_llm
+
+        waiting = store.list("pending_approval") + store.list("approved") + store.list("needs_assets")
+        if len(waiting) < 3:  # no acumular borradores sin revisar
+            provider = storage = None
+            if config.BFL_API_KEY:
+                from .images import BFLProvider, make_storage
+
+                provider, storage = BFLProvider(), make_storage()
+            generate_post(make_llm(), store, image_provider=provider, storage=storage)
+        else:
+            print(f"{len(waiting)} posts en espera; no genero más")
+        print(f"publicados: {publish_due(store)}")
     elif args.cmd == "publish":
         print(f"DRY_RUN={config.DRY_RUN}")
         print(f"publicados: {publish_due(store)}")

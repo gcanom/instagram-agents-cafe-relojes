@@ -26,15 +26,17 @@ def generate_post(llm: LLM, store: Store, topic: str | None = None, log=print, i
     for attempt in range(config.MAX_REVISIONS + 1):
         copy = COPYWRITER.run(llm, {"plan": plan, "facts": usable, "review_feedback": feedback})
         review = REVIEWER.run(llm, {"plan": plan, "facts": usable, "post": copy})
-        log(f"[reviewer] intento {attempt + 1}: aprobado={review.get('approved')} score={review.get('score')}")
-        if review.get("approved"):
+        blocking = review.get("blocking", review.get("issues", [])) if not review.get("approved") else review.get("blocking", [])
+        review["approved"] = bool(review.get("approved")) and not blocking  # un "aprobado" con bloqueantes no cuenta
+        log(f"[reviewer] intento {attempt + 1}: aprobado={review['approved']} score={review.get('score')} bloqueantes={len(blocking)}")
+        if review["approved"]:
             break
-        feedback = review.get("issues")
+        feedback = blocking + review.get("suggestions", [])
 
     payload = {"plan": plan, "research": research, "copy": copy, "review": review, "image_urls": []}
     if not review.get("approved"):
         post_id = store.add("rejected", payload)
-        store.set_status(post_id, "rejected", "; ".join(review.get("issues", [])))
+        store.set_status(post_id, "rejected", "; ".join(blocking))
         log(f"[pipeline] post {post_id} rechazado tras {config.MAX_REVISIONS} revisiones")
         return post_id
 

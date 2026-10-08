@@ -21,7 +21,7 @@ class FakeLLM:
             return {"hook": "h", "slides": ["1", "2"], "reel_script": "", "caption": "cap", "hashtags": ["#cafe"], "alt_text": "x"}
         if "editor" in system:
             self.reviews += 1
-            return {"approved": self.reviews > 1, "issues": ["dato sin respaldo"], "score": 7}
+            return {"approved": self.reviews > 1, "blocking": [] if self.reviews > 1 else ["dato sin respaldo"], "suggestions": [], "score": 7}
         return {"style_guide": "s", "images": [{"slide": 1, "prompt": "p", "overlay_text": "t"}]}
 
 
@@ -72,6 +72,22 @@ def _real_png() -> bytes:
     buf = io.BytesIO()
     Image.new("RGB", (256, 320), (90, 60, 40)).save(buf, "PNG")
     return buf.getvalue()
+
+
+class ReviewerGateTests(unittest.TestCase):
+    def test_approved_with_blocking_issues_is_not_approved(self):
+        class Liar(FakeLLM):
+            def json(self, system, user, max_tokens=0):
+                r = super().json(system, user)
+                if "editor" in system:
+                    return {"approved": True, "blocking": ["hashtag con error"], "suggestions": [], "score": 8}
+                return r
+
+        store = Store(":memory:")
+        pid = pipeline.generate_post(Liar(), store, log=lambda *_: None)
+        post = store.get(pid)
+        self.assertEqual(post["status"], "rejected")
+        self.assertIn("hashtag con error", post["error"])
 
 
 class ImageTests(unittest.TestCase):
@@ -131,3 +147,46 @@ class ComposeTests(unittest.TestCase):
         out = overlay(src.getvalue(), "Un texto largo de prueba para comprobar el ajuste de línea en la slide", 2, 6)
         self.assertEqual(out[:3], b"\xff\xd8\xff")
         self.assertEqual(Image.open(io.BytesIO(out)).size, (1024, 1280))
+
+
+class BackendTests(unittest.TestCase):
+    def _proc(self, stdout, code=0):
+        return type("P", (), {"stdout": stdout, "stderr": "", "returncode": code})()
+
+    def test_cli_backend_parses_result(self):
+        import json as j
+
+        from swarm.llm import ClaudeCLI
+
+        with patch("swarm.llm.subprocess.run", return_value=self._proc(j.dumps({"result": '{"a": 1}', "is_error": False}))) as run:
+            self.assertEqual(ClaudeCLI().json("sys", "user"), {"a": 1})
+        cmd = run.call_args.args[0]
+        self.assertIn("--tools", cmd)
+        self.assertEqual(run.call_args.kwargs["input"], "user")
+
+    def test_cli_backend_error(self):
+        import json as j
+
+        from swarm.llm import ClaudeCLI
+
+        with patch("swarm.llm.subprocess.run", return_value=self._proc(j.dumps({"result": "x", "is_error": True}), 1)):
+            with self.assertRaises(RuntimeError):
+                ClaudeCLI().complete("s", "u")
+
+    def test_json_retries_once(self):
+        from swarm.llm import BaseLLM
+
+        class Flaky(BaseLLM):
+            n = 0
+
+            def complete(self, system, user, max_tokens=0):
+                Flaky.n += 1
+                return "no es json" if Flaky.n == 1 else '{"ok": true}'
+
+        self.assertEqual(Flaky().json("s", "u"), {"ok": True})
+
+    def test_auto_backend_selection(self):
+        from swarm import llm
+
+        with patch.object(config, "LLM_BACKEND", "auto"), patch.dict("os.environ", {}, clear=True):
+            self.assertIsInstance(llm.make_llm(), llm.ClaudeCLI)

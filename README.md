@@ -38,6 +38,12 @@ python -m swarm.cli publish          # con DRY_RUN=true solo simula
 python -m unittest discover -s tests
 ```
 
+## 🧠 Motor de lenguaje (con o sin API key)
+
+`LLM_BACKEND=auto` usa el SDK si existe `ANTHROPIC_API_KEY`; si no, llama a `claude -p` (Claude Code en modo no interactivo, sin herramientas ni persistencia, desde un directorio vacío). Requiere la CLI instalada y autenticada (`claude login`) en la máquina que corra el ciclo, y consume los límites de tu plan. Revisa que tu plan permita uso automatizado antes de depender de esto.
+
+Ciclo automático (cron): `python -m swarm.cli run` genera un post si hay menos de 3 en espera y publica los aprobados que ya tocan.
+
 ## 🔄 Flujo
 
 `Strategist → Researcher → Copywriter ⇄ Reviewer (máx. 2 revisiones) → Visual → cola SQLite → (tú apruebas) → Publisher`
