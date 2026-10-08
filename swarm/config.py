@@ -14,3 +14,16 @@ GRAPH_VERSION = os.getenv("GRAPH_VERSION", "v21.0")
 MAX_POSTS_PER_DAY = int(os.getenv("MAX_POSTS_PER_DAY", "2"))
 DB_PATH = os.getenv("SWARM_DB", "data/queue.db")
 MAX_REVISIONS = 2
+
+# Generación de imágenes (Black Forest Labs / FLUX)
+BFL_API_KEY = os.getenv("BFL_API_KEY", "")
+BFL_MODEL = os.getenv("BFL_MODEL", "flux-pro-1.1")
+BFL_BASE = os.getenv("BFL_BASE", "https://api.bfl.ai/v1")
+IMAGE_WIDTH, IMAGE_HEIGHT = 1024, 1280  # 4:5, formato vertical de feed
+MAX_IMAGES_PER_POST = 10
+
+# Hosting público de imágenes (Instagram necesita una URL accesible): cloudinary | local
+IMAGE_STORAGE = os.getenv("IMAGE_STORAGE", "local")
+CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME", "")
+CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY", "")
+CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET", "")

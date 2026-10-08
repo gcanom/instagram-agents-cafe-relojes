@@ -48,7 +48,7 @@ python -m unittest discover -s tests
 
 ## ⚠️ Pendientes / límites reales
 
-1. **Imágenes:** la Graph API exige una `image_url` pública. Hoy el Visual Agent entrega prompts y tú adjuntas URLs. Siguiente paso: un `ImageProvider` (generador de imágenes + subida a S3/R2/Cloudinary, o Canva).
+1. **Imágenes:** FLUX (Black Forest Labs, `BFL_API_KEY`) genera las imágenes en 4:5. Instagram exige URL pública, así que con `IMAGE_STORAGE=cloudinary` se suben solas; con `local` quedan en `data/images/` y debes alojarlas tú (`swarm images`). `swarm render ID` regenera las de un post existente. Requiere que el entorno permita salida a `api.bfl.ai`.
 2. **Reels:** no implementado (requiere `video_url` y `media_type=REELS`).
 3. **Cuenta:** debe ser Business/Creator vinculada a página de Facebook; app de Meta con permiso `instagram_content_publish`. El token long-lived dura ~60 días y hay que renovarlo.
 4. **Scheduler:** correr `generate` y `publish` por cron/systemd/GitHub Actions. La cola SQLite necesita disco persistente (en Actions, no persiste).

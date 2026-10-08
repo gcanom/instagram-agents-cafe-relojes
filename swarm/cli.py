@@ -15,6 +15,8 @@ def main(argv=None):
     sub.add_parser("list")
     s = sub.add_parser("show")
     s.add_argument("id", type=int)
+    r = sub.add_parser("render", help="Genera imágenes con FLUX para un post en needs_assets")
+    r.add_argument("id", type=int)
     i = sub.add_parser("images", help="Adjunta URLs públicas de imágenes a un post")
     i.add_argument("id", type=int)
     i.add_argument("urls", nargs="+")
@@ -28,7 +30,21 @@ def main(argv=None):
     if args.cmd == "generate":
         from .llm import LLM
 
-        generate_post(LLM(), store, args.topic)
+        provider = storage = None
+        if config.BFL_API_KEY:
+            from .images import BFLProvider, make_storage
+
+            provider, storage = BFLProvider(), make_storage()
+        generate_post(LLM(), store, args.topic, image_provider=provider, storage=storage)
+    elif args.cmd == "render":
+        from .images import BFLProvider, make_storage, render_images
+
+        post = store.get(args.id)
+        urls = render_images(post["payload"]["visual"], BFLProvider(), make_storage(), f"post{args.id}")
+        if urls:
+            attach_images(store, args.id, urls)
+        else:
+            print("Imágenes guardadas en data/images, pero sin URL pública: configura IMAGE_STORAGE=cloudinary.")
     elif args.cmd == "list":
         for r in store.list():
             print(r)

@@ -14,7 +14,7 @@ def load_sources(folder: str = "sources") -> str:
     return "\n\n".join(f"## {f.name}\n{f.read_text()}" for f in sorted(p.glob("*.md")))
 
 
-def generate_post(llm: LLM, store: Store, topic: str | None = None, log=print) -> int:
+def generate_post(llm: LLM, store: Store, topic: str | None = None, log=print, image_provider=None, storage=None) -> int:
     plan = STRATEGIST.run(llm, {"user_topic": topic, "recent_topics": store.recent_topics()})
     log(f"[strategist] {plan.get('format')} · {plan.get('topic')}")
 
@@ -41,7 +41,15 @@ def generate_post(llm: LLM, store: Store, topic: str | None = None, log=print) -
     payload["visual"] = VISUAL.run(llm, {"plan": plan, "copy": copy})
     # Sin URLs públicas de imagen no se puede publicar: Graph API exige image_url accesible.
     post_id = store.add("needs_assets", payload)
-    log(f"[pipeline] post {post_id} listo; faltan imágenes (ver payload.visual)")
+    if image_provider and storage:
+        from .images import render_images
+
+        urls = render_images(payload["visual"], image_provider, storage, f"post{post_id}", log)
+        if urls:
+            attach_images(store, post_id, urls)
+            log(f"[pipeline] post {post_id} con imágenes; estado={store.get(post_id)['status']}")
+            return post_id
+    log(f"[pipeline] post {post_id} listo; faltan URLs públicas de imágenes (ver payload.visual)")
     return post_id
 
 

@@ -62,3 +62,47 @@ class PipelineTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ImageTests(unittest.TestCase):
+    def test_pipeline_renders_and_queues_for_approval(self):
+        class P:
+            def generate(self, prompt, **_):
+                return b"png"
+
+        class S:
+            def upload(self, data, name):
+                return f"https://cdn/{name}.png"
+
+        store = Store(":memory:")
+        with patch.object(config, "REQUIRE_APPROVAL", True):
+            pid = pipeline.generate_post(FakeLLM(), store, log=lambda *_: None, image_provider=P(), storage=S())
+        post = store.get(pid)
+        self.assertEqual(post["status"], "pending_approval")
+        self.assertEqual(post["payload"]["image_urls"], [f"https://cdn/post{pid}-1.png"])
+
+    def test_local_storage_leaves_needs_assets(self):
+        from swarm.images import render_images
+
+        class P:
+            def generate(self, prompt, **_):
+                return b"png"
+
+        class S:
+            def upload(self, data, name):
+                return None
+
+        self.assertEqual(render_images({"images": [{"prompt": "x"}]}, P(), S(), "t", log=lambda *_: None), [])
+
+    def test_bfl_polling(self):
+        from swarm.images import BFLProvider
+
+        post = type("R", (), {"status_code": 200, "json": lambda s: {"id": "1", "polling_url": "http://poll"}})()
+        pending = type("R", (), {"json": lambda s: {"status": "Pending"}})()
+        ready = type("R", (), {"json": lambda s: {"status": "Ready", "result": {"sample": "http://img"}}})()
+        img = type("R", (), {"content": b"IMG", "raise_for_status": lambda s: None})()
+        gets = iter([pending, ready, img])
+        with patch("swarm.images.requests.post", return_value=post), patch(
+            "swarm.images.requests.get", side_effect=lambda *a, **k: next(gets)
+        ), patch("swarm.images.time.sleep"):
+            self.assertEqual(BFLProvider(key="k").generate("p"), b"IMG")
