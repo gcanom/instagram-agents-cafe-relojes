@@ -51,11 +51,15 @@ class BFLProvider:
         raise ImageError("BFL: timeout esperando la imagen")
 
 
+def _ext(data: bytes) -> str:
+    return "jpg" if data[:3] == b"\xff\xd8\xff" else "png"
+
+
 class LocalStorage:
     """Guarda en disco. No produce URL pública: sirve para revisar o subir a mano."""
 
     def upload(self, data: bytes, name: str) -> str | None:
-        path = Path("data/images") / f"{name}.png"
+        path = Path("data/images") / f"{name}.{_ext(data)}"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
         return None
@@ -71,7 +75,7 @@ class CloudinaryStorage:
         r = requests.post(
             f"https://api.cloudinary.com/v1_1/{config.CLOUDINARY_CLOUD_NAME}/image/upload",
             data={**params, "api_key": config.CLOUDINARY_API_KEY, "signature": signature},
-            files={"file": (f"{name}.png", data)},
+            files={"file": (f"{name}.{_ext(data)}", data)},
             timeout=120,
         )
         body = r.json()
