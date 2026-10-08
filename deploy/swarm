@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Atajo: swarm <comando>  (review, approve ID, reject ID, list, show ID, run, publish ...)
+# Carga los secretos de /etc/instagram-swarm.env y corre como el usuario del servicio.
+APP_DIR="@APP_DIR@"; SVC_USER="@SVC_USER@"; ENV_FILE=/etc/instagram-swarm.env
+run() { set -a; . "$ENV_FILE"; set +a; cd "$APP_DIR" && exec .venv/bin/python -m swarm.cli "$@"; }
+if [ "$(id -un)" = "$SVC_USER" ]; then run "$@"; fi
+exec sudo -u "$SVC_USER" -H bash -c "$(declare -f run); APP_DIR='$APP_DIR' ENV_FILE='$ENV_FILE' run \"\$@\"" _ "$@"

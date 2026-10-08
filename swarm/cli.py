@@ -23,6 +23,9 @@ def main(argv=None):
     i = sub.add_parser("images", help="Adjunta URLs públicas de imágenes a un post")
     i.add_argument("id", type=int)
     i.add_argument("urls", nargs="+")
+    sub.add_parser("review", help="Muestra los posts pendientes de aprobación (texto, imágenes, notas del revisor)")
+    j = sub.add_parser("reject")
+    j.add_argument("id", type=int)
     a = sub.add_parser("approve")
     a.add_argument("id", type=int)
     a.add_argument("--at", help="ISO UTC, ej. 2026-10-09T14:00:00+00:00")
@@ -66,6 +69,23 @@ def main(argv=None):
             print(r)
     elif args.cmd == "show":
         print(json.dumps(store.get(args.id), ensure_ascii=False, indent=2))
+    elif args.cmd == "review":
+        pending = store.list("pending_approval")
+        for row in pending:
+            post = store.get(row["id"])["payload"]
+            copy, review = post["copy"], post.get("review", {})
+            print(f"\n=== POST {row['id']} · {post['plan'].get('topic')} · {post['plan'].get('format')} ===")
+            for n, slide in enumerate(copy.get("slides", []), 1):
+                print(f" {n}. {slide}")
+            print(f"\nCAPTION:\n{copy.get('caption')}\n{' '.join(copy.get('hashtags', []))}")
+            print("\nIMÁGENES:", *post.get("image_urls", []), sep="\n  ")
+            for note in review.get("suggestions", []) + review.get("blocking", []):
+                print(f"  ⚠ {note}")
+            print(f"\n→ swarm approve {row['id']} [--at ISO-UTC]   |   swarm reject {row['id']}")
+        if not pending:
+            print("Nada pendiente.")
+    elif args.cmd == "reject":
+        store.set_status(args.id, "rejected", "rechazado manualmente")
     elif args.cmd == "images":
         attach_images(store, args.id, args.urls)
     elif args.cmd == "approve":

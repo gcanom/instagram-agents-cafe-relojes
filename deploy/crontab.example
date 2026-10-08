@@ -1,0 +1,6 @@
+# Alternativa a systemd. Instalar con:  sudo -u swarm crontab deploy/crontab.example
+# (ajusta /opt/instagram-swarm; las variables salen de /etc/instagram-swarm.env)
+SHELL=/bin/bash
+APP=/opt/instagram-swarm
+30 7 * * *    set -a; . /etc/instagram-swarm.env; set +a; cd $APP && /usr/bin/flock -n data/swarm.lock .venv/bin/python -m swarm.cli run     >> data/swarm.log 2>&1
+*/30 * * * *  set -a; . /etc/instagram-swarm.env; set +a; cd $APP && /usr/bin/flock -n data/swarm.lock .venv/bin/python -m swarm.cli publish >> data/swarm.log 2>&1

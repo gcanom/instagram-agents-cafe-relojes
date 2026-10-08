@@ -1,0 +1,14 @@
+[Unit]
+Description=Instagram swarm: publicar posts aprobados que ya tocan
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=@SVC_USER@
+WorkingDirectory=@APP_DIR@
+EnvironmentFile=/etc/instagram-swarm.env
+ExecStart=/usr/bin/flock -n @APP_DIR@/data/swarm.lock @APP_DIR@/.venv/bin/python -m swarm.cli publish
+TimeoutStartSec=10min
+NoNewPrivileges=true
+PrivateTmp=true

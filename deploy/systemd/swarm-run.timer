@@ -1,0 +1,10 @@
+[Unit]
+Description=Instagram swarm: ciclo diario de generación
+
+[Timer]
+OnCalendar=*-*-* 07:30:00
+RandomizedDelaySec=20min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

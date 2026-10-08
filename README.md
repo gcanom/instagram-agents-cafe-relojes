@@ -44,6 +44,8 @@ python -m unittest discover -s tests
 
 Ciclo automático (cron): `python -m swarm.cli run` genera un post si hay menos de 3 en espera y publica los aprobados que ya tocan.
 
+📦 **Despliegue en tu propia máquina (systemd/cron):** ver [`deploy/README.md`](deploy/README.md).
+
 ## 🔄 Flujo
 
 `Strategist → Researcher → Copywriter ⇄ Reviewer (máx. 2 revisiones) → Visual → cola SQLite → (tú apruebas) → Publisher`

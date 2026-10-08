@@ -56,6 +56,24 @@ class PipelineTests(unittest.TestCase):
             publisher.publish_due(store, log=lambda *_: None)
             net.assert_not_called()
 
+    def test_publishing_state_guards_against_double_publish(self):
+        store = Store(":memory:")
+        pid = pipeline.generate_post(FakeLLM(), store, log=lambda *_: None)
+        pipeline.attach_images(store, pid, ["https://x/1.jpg"])
+        store.set_status(pid, "approved")
+        seen = []
+        orig = publisher.publish
+
+        def spy(post, log=print):
+            seen.append(store.get(post["id"])["status"])
+            return "media-1"
+
+        with patch.object(config, "DRY_RUN", False), patch.object(publisher, "publish", spy):
+            self.assertEqual(publisher.publish_due(store, log=lambda *_: None), 1)
+            self.assertEqual(publisher.publish_due(store, log=lambda *_: None), 0)  # no republica
+        self.assertEqual(seen, ["publishing"])
+        self.assertEqual(store.get(pid)["status"], "published")
+
     def test_parse_json_fenced(self):
         self.assertEqual(parse_json('texto\n```json\n{"a":1}\n```'), {"a": 1})
 

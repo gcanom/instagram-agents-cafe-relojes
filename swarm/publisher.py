@@ -59,6 +59,10 @@ def publish_due(store: Store, log=print) -> int:
             log("[publisher] tope diario alcanzado")
             break
         try:
+            if not config.DRY_RUN:
+                # Si el proceso muere a mitad de publicación, queda en "publishing" para revisión manual
+                # en vez de reintentarse y duplicar el post en Instagram.
+                store.set_status(post["id"], "publishing")
             media_id = publish(post, log)
             if media_id != "dry-run":
                 store.set_status(post["id"], "published")
