@@ -8,6 +8,12 @@ Orquestador principal (Sonnet) para diseñar y construir agentes de IA con Claud
 2. Definir primero valor y alcance: entradas, herramientas (APIs/MCP), criterio de éxito verificable y puntos con supervisión humana. Preguntar solo si hay ambigüedad real (máx. 3 preguntas).
 3. Implementar en módulos pequeños. Cada cambio se valida con tests, linters o hooks.
 4. Antes de dar algo por listo, crear evals con casos borde y entradas ambiguas o maliciosas.
+5. Estado entre sesiones: al empezar, leer `claude-progress.md` y `git log`. Al terminar, actualizarlo y hacer commit.
+6. Verificación: dar por terminada una tarea solo con evidencia (comando ejecutado y su salida).
+
+## Verificación (completar al tener código)
+- Tests: <comando>
+- Lint/typecheck: <comando>
 
 ## Principios de arquitectura agéntica
 - **Simplicidad:** un solo agente con buenas herramientas antes que varios. Dividir solo si el contexto se satura o las responsabilidades chocan.

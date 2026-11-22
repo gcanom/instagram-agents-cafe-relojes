@@ -15,6 +15,12 @@ Sistema automatizado basado en un enjambre de agentes de IA para la investigaci�
 4. **Editor/Reviewer Agent:** Control de calidad y consistencia técnica.
 5. **Publisher Agent:** Integración con Instagram Graph API para programación y publicación.
 
+## 🚀 Cómo iniciar un proyecto nuevo con esta plantilla
+1. En GitHub: Settings del repo, activar "Template repository". Luego "Use this template" para cada proyecto.
+2. Iniciar una sesión nueva en claude.ai/code con el repo nuevo y un entorno cuyo Setup script esté vacío (solo comandos bash, nunca prompts).
+3. Primer mensaje: "Fase 1 de este proyecto: [problema en una frase]".
+4. Al terminar cada sesión, actualizar `claude-progress.md` y hacer commit.
+
 ## 🛠️ Stack Tecnológico
 - **Orquestación:** CrewAI / LangGraph / Python
 - **Automatización:** Webhooks / n8n / Make
